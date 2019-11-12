@@ -2,13 +2,15 @@ package de.hpi.ddm.actors;
 
 import java.io.Serializable;
 
-import akka.actor.AbstractLoggingActor;
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.Props;
+import akka.NotUsed;
+import akka.actor.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import scala.concurrent.ExecutionContextExecutor;
+import scala.concurrent.duration.FiniteDuration;
 
 public class LargeMessageProxy extends AbstractLoggingActor {
 
@@ -65,7 +67,8 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 	private void handle(LargeMessage<?> message) {
 		ActorRef receiver = message.getReceiver();
 		ActorSelection receiverProxy = this.context().actorSelection(receiver.path().child(DEFAULT_NAME));
-		
+		final Source<LargeMessage<?>, NotUsed> source = Source.single(message);
+
 		// This will definitely fail in a distributed setting if the serialized message is large!
 		// Solution options:
 		// 1. Serialize the object and send its bytes batch-wise (make sure to use artery's side channel then).
