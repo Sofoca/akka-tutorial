@@ -1,9 +1,11 @@
 package de.hpi.ddm.actors;
 
 import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
 import akka.actor.*;
+import akka.pattern.Patterns;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,6 +44,12 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 		private ActorRef sender;
 		private ActorRef receiver;
 	}
+
+	@Data @NoArgsConstructor @AllArgsConstructor
+	public static class SourceSaysHello implements Serializable {
+		private static final long serialVersionUID = 9059032848123489012L;
+		private SourceRef sourceRef;
+	}
 	
 	/////////////////
 	// Actor State //
@@ -60,14 +68,22 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 		return receiveBuilder()
 				.match(LargeMessage.class, this::handle)
 				.match(BytesMessage.class, this::handle)
+				.match(SourceSaysHello.class, this::handle)
 				.matchAny(object -> this.log().info("Received unknown message: \"{}\"", object.toString()))
 				.build();
+	}
+
+	private void handle(SourceSaysHello sourceSaysHello) {
+		System.out.println(sourceSaysHello);
 	}
 
 	private void handle(LargeMessage<?> message) {
 		ActorRef receiver = message.getReceiver();
 		ActorSelection receiverProxy = this.context().actorSelection(receiver.path().child(DEFAULT_NAME));
 		final Source<LargeMessage<?>, NotUsed> source = Source.single(message);
+		ActorMaterializer mat = ActorMaterializer.create(this.getContext());
+		final CompletionStage<SourceRef<LargeMessage<?>>> completionStage = source.runWith(StreamRefs.sourceRef(), mat);
+		Patterns.pipe(completionStage.thenApply(ref->new SourceSaysHello(ref)), getContext().getDispatcher()).to(receiverProxy);
 
 		// This will definitely fail in a distributed setting if the serialized message is large!
 		// Solution options:
