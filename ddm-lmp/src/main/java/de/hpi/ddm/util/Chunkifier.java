@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
+@SuppressWarnings("WeakerAccess")
 public class Chunkifier {
     private static final Kryo kryo = new Kryo();
 
@@ -32,7 +33,7 @@ public class Chunkifier {
         ByteBuffer byteBuffer = ByteBuffer.wrap(((ByteArrayOutputStream) output.getOutputStream()).toByteArray()); // doesn't copy
         List<byte[]> chunks = new LinkedList<>();
         while (byteBuffer.hasRemaining()) {
-            byte[] chunk = new byte[chunkSize];
+            byte[] chunk = new byte[byteBuffer.remaining() > chunkSize ? chunkSize : byteBuffer.remaining()];
             byteBuffer.get(chunk); // copies
             chunks.add(chunk);
         }
