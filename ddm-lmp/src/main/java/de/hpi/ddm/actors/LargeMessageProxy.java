@@ -83,7 +83,7 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 		final Source<LargeMessage<?>, NotUsed> source = Source.single(message);
 		ActorMaterializer mat = ActorMaterializer.create(this.getContext());
 		final CompletionStage<SourceRef<LargeMessage<?>>> completionStage = source.runWith(StreamRefs.sourceRef(), mat);
-		Patterns.pipe(completionStage.thenApply(ref->new SourceSaysHello(ref)), getContext().getDispatcher()).to(receiverProxy);
+		Patterns.pipe(completionStage.thenApply(SourceSaysHello::new), getContext().getDispatcher()).to(receiverProxy);
 
 		// This will definitely fail in a distributed setting if the serialized message is large!
 		// Solution options:

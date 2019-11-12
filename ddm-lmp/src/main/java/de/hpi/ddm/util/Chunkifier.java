@@ -10,24 +10,22 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-@SuppressWarnings("WeakerAccess")
 public class Chunkifier {
     private static final Kryo kryo = new Kryo();
 
-    public static byte[] blobify(List<byte[]> data, int chunkSize) {
+    public static Object unchunkify(List<byte[]> data, int chunkSize, Class tClass) {
         int fullChunkSize = chunkSize * (data.size() - 1);
         int lastChunkSize = data.get(data.size() - 1).length;
 
         ByteBuffer writeBuffer = ByteBuffer.wrap(new byte[fullChunkSize + lastChunkSize]);
         data.forEach(writeBuffer::put);
-
-        return writeBuffer.array();
-
+        //noinspection unchecked
+        return new Kryo().readObject(new Input(writeBuffer.array()), tClass);
     }
 
-    public static List<byte[]> chunkify(LargeMessageProxy.LargeMessage<?> msg, int chunkSize) {
+    public static List<byte[]> chunkify(Object object, int chunkSize) {
         Output output = new Output(new ByteArrayOutputStream());
-        kryo.writeObject(output, msg.getMessage());
+        kryo.writeObject(output, object);
         output.close();
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(((ByteArrayOutputStream) output.getOutputStream()).toByteArray()); // doesn't copy
