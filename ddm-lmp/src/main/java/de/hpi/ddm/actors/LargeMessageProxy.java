@@ -1,11 +1,16 @@
 package de.hpi.ddm.actors;
 
 import java.io.Serializable;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
 import akka.actor.*;
 import akka.pattern.Patterns;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import de.hpi.ddm.util.Chunkifier;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,7 +26,8 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 	////////////////////////
 
 	public static final String DEFAULT_NAME = "largeMessageProxy";
-	
+	public static final int CHUNK_SIZE = 1024;
+
 	public static Props props() {
 		return Props.create(LargeMessageProxy.class);
 	}
@@ -29,7 +35,7 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 	////////////////////
 	// Actor Messages //
 	////////////////////
-	
+
 	@Data @NoArgsConstructor @AllArgsConstructor
 	public static class LargeMessage<T> implements Serializable {
 		private static final long serialVersionUID = 2940665245810221108L;
@@ -48,13 +54,16 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 	@Data @NoArgsConstructor @AllArgsConstructor
 	public static class SourceSaysHello implements Serializable {
 		private static final long serialVersionUID = 9059032848123489012L;
-		private SourceRef sourceRef;
+		private SourceRef<byte[]> sourceRef;
+		private Class dataType;
+		private ActorRef sender;
+		private ActorRef receiver;
 	}
-	
+
 	/////////////////
 	// Actor State //
 	/////////////////
-	
+
 	/////////////////////
 	// Actor Lifecycle //
 	/////////////////////
@@ -62,28 +71,31 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 	////////////////////
 	// Actor Behavior //
 	////////////////////
-	
+
 	@Override
 	public Receive createReceive() {
 		return receiveBuilder()
 				.match(LargeMessage.class, this::handle)
-				.match(BytesMessage.class, this::handle)
 				.match(SourceSaysHello.class, this::handle)
 				.matchAny(object -> this.log().info("Received unknown message: \"{}\"", object.toString()))
 				.build();
 	}
 
 	private void handle(SourceSaysHello sourceSaysHello) {
-		System.out.println(sourceSaysHello);
+		List<byte[]> chunks = new LinkedList<byte[]>();
+		sourceSaysHello.getSourceRef().getSource().runWith(Sink.foreach(chunk -> chunks.add(chunk)), ActorMaterializer.create(this.getContext()));
+		Object objectAnswer = Chunkifier.unchunkify(chunks, CHUNK_SIZE, sourceSaysHello.dataType);
+		LargeMessage message = (LargeMessage) objectAnswer;
+		message.getReceiver().tell(message, sourceSaysHello.sender);
 	}
 
 	private void handle(LargeMessage<?> message) {
 		ActorRef receiver = message.getReceiver();
 		ActorSelection receiverProxy = this.context().actorSelection(receiver.path().child(DEFAULT_NAME));
-		final Source<LargeMessage<?>, NotUsed> source = Source.single(message);
+		final Source<byte[], NotUsed> source = Source.from(Chunkifier.chunkify(message, CHUNK_SIZE));
 		ActorMaterializer mat = ActorMaterializer.create(this.getContext());
-		final CompletionStage<SourceRef<LargeMessage<?>>> completionStage = source.runWith(StreamRefs.sourceRef(), mat);
-		Patterns.pipe(completionStage.thenApply(SourceSaysHello::new), getContext().getDispatcher()).to(receiverProxy);
+		final CompletionStage<SourceRef<byte[]>> completionStage = source.runWith(StreamRefs.sourceRef(), mat);
+		Patterns.pipe(completionStage.thenApply((ref) -> new SourceSaysHello(ref, message.getClass(), this.getSender(), message.getReceiver())), getContext().getDispatcher()).to(receiverProxy);
 
 		// This will definitely fail in a distributed setting if the serialized message is large!
 		// Solution options:
@@ -91,11 +103,12 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 		// 2. Serialize the object and send its bytes via Akka streaming.
 		// 3. Send the object via Akka's http client-server component.
 		// 4. Other ideas ...
-		receiverProxy.tell(new BytesMessage<>(message.getMessage(), this.sender(), message.getReceiver()), this.self());
+
+		// receiverProxy.tell(new BytesMessage<>(message.getMessage(), this.sender(), message.getReceiver()), this.self());
 	}
 
-	private void handle(BytesMessage<?> message) {
-		// Reassemble the message content, deserialize it and/or load the content from some local location before forwarding its content.
-		message.getReceiver().tell(message.getBytes(), message.getSender());
-	}
+//	private void handle(BytesMessage<?> message) {
+//		// Reassemble the message content, deserialize it and/or load the content from some local location before forwarding its content.
+//		message.getReceiver().tell(message.getBytes(), message.getSender());
+//	}
 }
