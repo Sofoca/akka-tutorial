@@ -5,20 +5,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.actor.*;
 import akka.pattern.Patterns;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
 import de.hpi.ddm.util.Chunkifier;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import scala.concurrent.ExecutionContextExecutor;
-import scala.concurrent.duration.FiniteDuration;
 
 public class LargeMessageProxy extends AbstractLoggingActor {
 
@@ -92,19 +87,11 @@ public class LargeMessageProxy extends AbstractLoggingActor {
 
     private void handle(SourceSaysHello sourceSaysHello) {
         List<byte[]> chunks = new LinkedList<>();
-        Source<byte[], NotUsed> source = sourceSaysHello.getSourceRef().getSource();
 
-        CompletionStage<Done> test = source.runForeach(chunks::add, materializer);
-        CompletionStage<Object> test2 = test.thenApply(done -> Chunkifier.unchunkify(
-                chunks,
-                CHUNK_SIZE,
-                sourceSaysHello.dataType
-        ));
-        test2.thenApply(messageContent -> {
-            sourceSaysHello.getReceiver().tell(messageContent, getSender());
-            return null;
-        });
-
+        sourceSaysHello.getSourceRef().getSource()
+                .runForeach(chunks::add, materializer)
+                .thenApply(ignore -> Chunkifier.unchunkify(chunks, CHUNK_SIZE, sourceSaysHello.dataType))
+                .thenAccept(data -> sourceSaysHello.getReceiver().tell(data, sourceSaysHello.getSender()));
     }
 
     private void handle(LargeMessage<?> message) {
