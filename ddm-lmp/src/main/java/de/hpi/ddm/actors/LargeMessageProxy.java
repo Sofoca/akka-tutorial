@@ -3,11 +3,8 @@ package de.hpi.ddm.actors;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
-import akka.NotUsed;
 import akka.actor.*;
-import akka.pattern.Patterns;
 import de.hpi.ddm.util.Chunkifier;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,9 +19,9 @@ public class LargeMessageProxy extends AbstractLoggingActor {
     ////////////////////////
 
     public static final String DEFAULT_NAME = "largeMessageProxy";
-    public static final int CHUNK_SIZE = 4;
+    public static final int CHUNK_SIZE = 1024;
 
-    ActorMaterializer materializer = ActorMaterializer.create(getContext());
+    private final ActorMaterializer materializer = ActorMaterializer.create(getContext());
 
     public static Props props() {
         return Props.create(LargeMessageProxy.class);
@@ -40,16 +37,6 @@ public class LargeMessageProxy extends AbstractLoggingActor {
     public static class LargeMessage<T> implements Serializable {
         private static final long serialVersionUID = 2940665245810221108L;
         private T message;
-        private ActorRef receiver;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BytesMessage<T> implements Serializable {
-        private static final long serialVersionUID = 4057807743872319842L;
-        private T bytes;
-        private ActorRef sender;
         private ActorRef receiver;
     }
 
@@ -97,18 +84,14 @@ public class LargeMessageProxy extends AbstractLoggingActor {
     private void handle(LargeMessage<?> message) {
         ActorRef receiver = message.getReceiver();
         ActorSelection receiverProxy = this.context().actorSelection(receiver.path().child(DEFAULT_NAME));
-        final Source<byte[], NotUsed> source = Source.from(Chunkifier.chunkify(message.getMessage(), CHUNK_SIZE));
-        ActorMaterializer mat = ActorMaterializer.create(this.getContext());
-        final CompletionStage<SourceRef<byte[]>> completionStage = source.runWith(StreamRefs.sourceRef(), mat);
-        Patterns.pipe(
-                completionStage.thenApply(
-                        (sourceRef) -> new SourceSaysHello(
-                                sourceRef,
-                                message.getMessage().getClass(),
-                                this.getSender(),
-                                message.getReceiver()
-                        )
-                ),
-                getContext().getDispatcher()).to(receiverProxy);
-    }
+		Source.from(Chunkifier.chunkify(message.getMessage(), CHUNK_SIZE))
+				.runWith(StreamRefs.sourceRef(), materializer)
+				.thenApply((sourceRef) -> new SourceSaysHello(
+						sourceRef,
+						message.getMessage().getClass(),
+						this.getSender(),
+						message.getReceiver()
+				))
+				.thenAccept(msg -> receiverProxy.tell(msg, this.getSender()));
+        }
 }
