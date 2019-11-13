@@ -3,7 +3,6 @@ package de.hpi.ddm.util;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import de.hpi.ddm.actors.LargeMessageProxy;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -31,7 +30,7 @@ public class Chunkifier {
         ByteBuffer byteBuffer = ByteBuffer.wrap(((ByteArrayOutputStream) output.getOutputStream()).toByteArray()); // doesn't copy
         List<byte[]> chunks = new LinkedList<>();
         while (byteBuffer.hasRemaining()) {
-            byte[] chunk = new byte[byteBuffer.remaining() > chunkSize ? chunkSize : byteBuffer.remaining()];
+            byte[] chunk = new byte[Math.min(byteBuffer.remaining(), chunkSize)];
             byteBuffer.get(chunk); // copies
             chunks.add(chunk);
         }
