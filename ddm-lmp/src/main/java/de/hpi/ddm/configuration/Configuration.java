@@ -1,9 +1,9 @@
 package de.hpi.ddm.configuration;
 
+import lombok.Data;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-import lombok.Data;
 
 @Data
 public class Configuration {
@@ -35,6 +35,7 @@ public class Configuration {
 		this.host = commandMaster.host;
 		this.port = commandMaster.port;
 		this.numWorkers = commandMaster.numWorkers;
+		this.dataSize = commandMaster.dataSize;
 	}
 
 	public void update(CommandSlave commandSlave) {
