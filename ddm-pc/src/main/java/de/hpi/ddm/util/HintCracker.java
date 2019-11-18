@@ -1,5 +1,7 @@
 package de.hpi.ddm.util;
 
+import lombok.NoArgsConstructor;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -7,11 +9,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@NoArgsConstructor
 class HintCracker {
-    private final char[] possibleChars;
-    private final String target;
+    private char[] possibleChars;
+    private String target;
 
     HintCracker(char[] possibleChars, String targetHash) {
+        this();
         this.possibleChars = possibleChars;
         this.target = targetHash;
     }

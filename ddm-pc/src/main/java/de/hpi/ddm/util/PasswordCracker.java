@@ -2,15 +2,18 @@ package de.hpi.ddm.util;
 
 import akka.remote.EndpointManager;
 import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import lombok.NoArgsConstructor;
 
 import java.util.function.Predicate;
 
+@NoArgsConstructor
 class PasswordCracker {
     private CharOpenHashSet passwordCharacters;
-    private final int passwordLength;
-    private final String passwordHash;
+    private int passwordLength;
+    private String passwordHash;
 
     PasswordCracker(char[] passwordChars, int passwordLength, String passwordHash) {
+        this();
         this.passwordCharacters = new CharOpenHashSet(passwordChars);
         this.passwordLength = passwordLength;
         this.passwordHash = passwordHash;
