@@ -23,30 +23,14 @@ class HintCracker {
                 possibleChars.length,
                 possibleChars.length,
                 permutations
-                );
+        );
 
         for (String permutation : permutations) {
-            if (hash(permutation).equals(target)) {
+            if (Sha256.hash(permutation).equals(target)) {
                 return permutation;
             }
         }
         return null;
-    }
-
-    private static String hash(String line) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = digest.digest(String.valueOf(line).getBytes(StandardCharsets.UTF_8));
-
-            StringBuilder stringBuffer = new StringBuilder();
-            for (byte hashedByte : hashedBytes) {
-                stringBuffer.append(Integer.toString((hashedByte & 0xff) + 0x100, 16).substring(1));
-            }
-            return stringBuffer.toString();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e.getMessage());
-        }
     }
 
     // Generating all permutations of an array using Heap's Algorithm
