@@ -7,16 +7,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class HintCracker {
+class HintCracker {
     private final char[] possibleChars;
     private final String target;
 
-    public HintCracker(char[] possibleChars, String target) {
+    HintCracker(char[] possibleChars, String targetHash) {
         this.possibleChars = possibleChars;
-        this.target = target;
+        this.target = targetHash;
     }
 
-    public String crack() {
+    String crack() {
         List<String> permutations = new ArrayList<>();
         heapPermutation(
                 Arrays.copyOf(possibleChars, possibleChars.length),
