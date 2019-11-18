@@ -23,7 +23,7 @@ public class MasterSystem {
 	
 	public static final String MASTER_ROLE = "master";
 
-	public static void start() {
+	static void start() {
 		final Configuration c = ConfigurationSingleton.get();
 		
 		final Config config = ConfigFactory.parseString(
@@ -46,33 +46,24 @@ public class MasterSystem {
 		
 		ActorRef master = system.actorOf(Master.props(reader, collector), Master.DEFAULT_NAME);
 		
-		Cluster.get(system).registerOnMemberUp(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < c.getNumWorkers(); i++)
-					system.actorOf(Worker.props(), Worker.DEFAULT_NAME + i);
-				
-				if (!c.isStartPaused())
-					system.actorSelection("/user/" + Master.DEFAULT_NAME).tell(new Master.StartMessage(), ActorRef.noSender());
-			}
+		Cluster.get(system).registerOnMemberUp(() -> {
+			for (int i = 0; i < c.getNumWorkers(); i++)
+				system.actorOf(Worker.props(), Worker.DEFAULT_NAME + i);
+
+			if (!c.isStartPaused())
+				system.actorSelection("/user/" + Master.DEFAULT_NAME).tell(new Master.StartMessage(), ActorRef.noSender());
 		});
 
-		Cluster.get(system).registerOnMemberRemoved(new Runnable() {
-			@Override
-			public void run() {
-				system.terminate();
+		Cluster.get(system).registerOnMemberRemoved(() -> {
+			system.terminate();
 
-				new Thread() {
-					@Override
-					public void run() {
-						try {
-							Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
-						} catch (Exception e) {
-							System.exit(-1);
-						}
-					}
-				}.start();
-			}
+			new Thread(() -> {
+				try {
+					Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
+				} catch (Exception e) {
+					System.exit(-1);
+				}
+			}).start();
 		});
 		
 		if (c.isStartPaused()) {

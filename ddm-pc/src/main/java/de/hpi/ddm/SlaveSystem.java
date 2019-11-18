@@ -15,11 +15,11 @@ import de.hpi.ddm.configuration.ConfigurationSingleton;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
-public class SlaveSystem {
+class SlaveSystem {
 
-	public static final String SLAVE_ROLE = "slave";
+	static final String SLAVE_ROLE = "slave";
 	
-	public static void start() {
+	static void start() {
 		final Configuration c = ConfigurationSingleton.get();
 		
 		final Config config = ConfigFactory.parseString(
@@ -36,30 +36,21 @@ public class SlaveSystem {
 		
 		ActorRef reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
 		
-		Cluster.get(system).registerOnMemberUp(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < c.getNumWorkers(); i++)
-					system.actorOf(Worker.props(), Worker.DEFAULT_NAME + i);
-			}
+		Cluster.get(system).registerOnMemberUp(() -> {
+			for (int i = 0; i < c.getNumWorkers(); i++)
+				system.actorOf(Worker.props(), Worker.DEFAULT_NAME + i);
 		});
 
-		Cluster.get(system).registerOnMemberRemoved(new Runnable() {
-			@Override
-			public void run() {
-				system.terminate();
+		Cluster.get(system).registerOnMemberRemoved(() -> {
+			system.terminate();
 
-				new Thread() {
-					@Override
-					public void run() {
-						try {
-							Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
-						} catch (Exception e) {
-							System.exit(-1);
-						}
-					}
-				}.start();
-			}
+			new Thread(() -> {
+				try {
+					Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
+				} catch (Exception e) {
+					System.exit(-1);
+				}
+			}).start();
 		});
 	}
 }
