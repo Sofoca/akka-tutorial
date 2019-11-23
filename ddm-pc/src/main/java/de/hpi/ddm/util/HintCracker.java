@@ -15,7 +15,8 @@ public class HintCracker {
         this.possibleCharExclusions = getCharExclusions(possibleChars);
     }
 
-    public static List<char[]> getCharExclusions(char[] possibleChars) {
+    static List<char[]> getCharExclusions(char[] possibleChars) {
+        possibleChars = Arrays.copyOf(possibleChars, possibleChars.length);
         List<char[]> possibleCharExclusions = new ArrayList<>();
         for (int i = 0; i < possibleChars.length; i++) {
             swap(possibleChars, i, possibleChars.length - 1);

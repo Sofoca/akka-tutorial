@@ -11,7 +11,7 @@ public class WorkManager {
     private final LinkedList<Task> waitingTasks = new LinkedList<>();
     private final List<WorkItem> workingTasks = new ArrayList<>();
     private final Map<Integer, List<String>> hints = new HashMap<>();
-    private final Map<Integer, String> finishedTasks = new HashMap<>();
+    private final Map<Integer, String> passwords = new HashMap<>();
 
     public void addHintSolution(HintSolution hintSolution) {
         hints.putIfAbsent(hintSolution.getPasswordId(), new LinkedList<>());
@@ -19,18 +19,18 @@ public class WorkManager {
     }
 
     public void addPasswordSolution(PasswordSolution passwordSolution) {
-        finishedTasks.put(passwordSolution.getPasswordId(), passwordSolution.getPassword());
+        passwords.put(passwordSolution.getPasswordId(), passwordSolution.getPassword());
     }
 
     public Collection<String> getResults() {
-        return finishedTasks.values();
+        return passwords.values();
     }
 
     public Task getWork() {
         Task task;
         do {
             task = waitingTasks.pop();
-        } while (finishedTasks.containsKey(task.getPasswordId()));
+        } while (passwords.containsKey(task.getPasswordId()));
 
         if (task instanceof PasswordTask) {
             ((PasswordTask) task).getHints().addAll(hints.get(task.getPasswordId()));
@@ -46,7 +46,7 @@ public class WorkManager {
     }
 
     public boolean isFinished() {
-        return waitingTasks.isEmpty() && workingTasks.isEmpty() && finishedTasks.size() == passwordCount;
+        return waitingTasks.isEmpty() && workingTasks.isEmpty() && passwords.size() == passwordCount;
     }
 
     public void addWork(Reader.PasswordLine passwordLine) {
