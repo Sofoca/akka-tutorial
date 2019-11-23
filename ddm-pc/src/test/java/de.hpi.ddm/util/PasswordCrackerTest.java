@@ -3,6 +3,7 @@ package de.hpi.ddm.util;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -50,6 +51,37 @@ public class PasswordCrackerTest {
                 "c4712866799881ac48ca55bf78a9540b1883ae033b52109169eb784969be09d5");
         passwordCracker.applyHints(hints);
         assertEquals(password, passwordCracker.crack());
+    }
+
+    @Test
+    public void testCustomPassword() {
+        PasswordCracker passwordCracker = new PasswordCracker(
+                "ABCDEFGHIJK".toCharArray(),
+                10,
+                "fdb4bb3257417896b8e313eaf4979255e74f141fa2ea76bcbe76fa70d3643c7d");
+        passwordCracker.applyHints(Arrays.asList(
+                "ABCDEFGHIJ",
+                "ABKDEFGHIJ",
+                "ABCKEFGHIJ",
+                "ABCDKFGHIJ",
+                "ABCDEKGHIJ",
+                "ABCDEFKHIJ",
+                "ABCDEFGKIJ",
+                "ABCDEFGHKJ",
+                "ABCDEFGHIK"
+                )
+        );
+        assertEquals("ABABABABAB", passwordCracker.crack());
+    }
+
+    @Test
+    public void testCustomPassword2() {
+        PasswordCracker passwordCracker = new PasswordCracker(
+                "ABCDEFGHIJK".toCharArray(),
+                10,
+                "7c0a495cb43e040309aa1ad7537e74641536ab2bddf38d181a7a8e63d7f022f4");
+        passwordCracker.applyHints(Collections.singletonList("ABCDEFGHIJ"));
+        assertEquals("ABCDEFGHII", passwordCracker.crack());
     }
 
     @Test

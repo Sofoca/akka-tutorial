@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.function.Predicate;
 
 @NoArgsConstructor
-class PasswordCracker {
+public class PasswordCracker {
     private CharOpenHashSet passwordCharacters;
     private int passwordLength;
     private String passwordHash;
@@ -19,12 +19,12 @@ class PasswordCracker {
         this.passwordHash = passwordHash;
     }
 
-    PasswordCracker(char[] passwordChars, int passwordLength, String passwordHash, Iterable<String> hints) {
+    public PasswordCracker(char[] passwordChars, int passwordLength, String passwordHash, Iterable<String> hints) {
         this(passwordChars, passwordLength, passwordHash);
         applyHints(hints);
     }
 
-    String crack() {
+    public String crack() {
         return findPassword(possiblePassword -> Sha256.fits(possiblePassword, passwordHash));
     }
 
