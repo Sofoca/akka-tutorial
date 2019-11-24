@@ -75,5 +75,6 @@ public class Collector extends AbstractLoggingActor {
 
     private void handle(PrintMessage message) {
         this.results.forEach(result -> this.log().info("{}", result));
+
     }
 }

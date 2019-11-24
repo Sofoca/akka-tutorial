@@ -15,7 +15,7 @@ public class WorkManager {
 
     public void addHintSolution(HintSolution hintSolution) {
         hints.putIfAbsent(hintSolution.getPasswordId(), new LinkedList<>());
-        hints.get(hintSolution.getPasswordId()).add(hintSolution.getHint());
+        hints.get(hintSolution.getPasswordId()) .add(hintSolution.getHint());
     }
 
     public void addPasswordSolution(PasswordSolution passwordSolution) {
@@ -46,7 +46,8 @@ public class WorkManager {
     }
 
     public boolean isFinished() {
-        return waitingTasks.isEmpty() && workingTasks.isEmpty() && passwords.size() == passwordCount;
+        //return waitingTasks.isEmpty() && workingTasks.isEmpty() && passwords.size() == passwordCount;
+        return waitingTasks.isEmpty() && passwords.size() == passwordCount;
     }
 
     public void addWork(Reader.PasswordLine passwordLine) {

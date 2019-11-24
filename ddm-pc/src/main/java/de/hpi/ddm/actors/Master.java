@@ -108,10 +108,16 @@ public class Master extends AbstractLoggingActor {
     private void handle(Worker.WorkRequest workRequest) {
         log().info("new workrequest");
         if (workManager.isFinished()) {
+            log().info("workmanager is finished for now");
             this.reader.tell(new Reader.ReadMessage(), this.self());
+            log().info("sent ReadMessage to reader");
         } else {
+            log().info("workmanager not finished");
             if (workManager.hasTasks()) {
                 workRequest.getWorker().tell(workManager.getWork(), this.getSelf());
+                log().info("sent work to worker");
+            } else {
+                log().info("no work left to send to worker");
             }
         }
     }
@@ -142,6 +148,7 @@ public class Master extends AbstractLoggingActor {
 
         if (message.getLines().isEmpty()) {
             if (workManager.isFinished()) {
+                log().info("workmanager is finished, collecting and terminating");
                 this.collector.tell(new Collector.CollectMessage(workManager.getResults()), this.self());
                 this.collector.tell(new Collector.PrintMessage(), this.self());
                 this.terminate();
@@ -165,14 +172,17 @@ public class Master extends AbstractLoggingActor {
         this.collector.tell(PoisonPill.getInstance(), ActorRef.noSender());
 
         for (ActorRef worker : this.workers) {
-            this.context().unwatch(worker);
-            worker.tell(PoisonPill.getInstance(), ActorRef.noSender());
+            // this.context().unwatch(worker);
+            this.getContext().stop(worker); // ungracefully stop actors
+            // worker.tell(PoisonPill.getInstance(), ActorRef.noSender());
         }
 
         this.self().tell(PoisonPill.getInstance(), ActorRef.noSender());
 
         long executionTime = System.currentTimeMillis() - this.startTime;
         this.log().info("Algorithm finished in {} ms", executionTime);
+
+        this.getContext().getSystem().terminate();
     }
 
     private void handle(RegistrationMessage message) {
