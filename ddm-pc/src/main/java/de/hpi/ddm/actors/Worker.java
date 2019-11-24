@@ -87,9 +87,15 @@ public class Worker extends AbstractLoggingActor {
                 //.match(PasswordSolution.class, this::handle)
                 .match(PasswordTask.class, this::handle)
                 .match(HintTask.class, this::handle)
+                .match(PoisonPill.class, this::handle)
                 //.match(HintSolution.class, this::handle)
                 .matchAny(object -> this.log().info("Received unknown message: \"{}\"", object.toString()))
                 .build();
+    }
+
+    private void handle(PoisonPill poisonPill) {
+        this.getContext().stop(this.self());
+        this.getContext().getSystem().terminate();
     }
 
     private void handle(Master.WorkerStartMessage startMessage) {

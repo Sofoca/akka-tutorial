@@ -181,7 +181,7 @@ public class Master extends AbstractLoggingActor {
 
         long executionTime = System.currentTimeMillis() - this.startTime;
         this.log().info("Algorithm finished in {} ms", executionTime);
-
+        this.getContext().stop(this.self());
         this.getContext().getSystem().terminate();
     }
 
