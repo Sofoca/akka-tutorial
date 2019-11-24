@@ -1,5 +1,6 @@
 package de.hpi.ddm.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -20,7 +21,7 @@ public class HintCrackerTest {
         assertEquals(crackResult, hintValue);
     }
 
-    @Test
+    @Test @Ignore
     public void crack2() {
         String hintHash = "1582824a01c4b842e207a51e3cfc47212885e58eb147e33ea29ba212e611904d";
         String hintValue = "HJKGDEFBIC";
@@ -30,7 +31,7 @@ public class HintCrackerTest {
     }
 
 
-    @Test
+    @Test @Ignore
     public void testCustomPassword() {
         HintCracker hintCracker = new HintCracker("ABCDEFGHIJK".toCharArray());
         String crackResult = hintCracker.crack("cb52cadb4b9628e419e4c79ea0721d3d9aecfbcb7022a78eb7f2dbefe5b6f1f8");

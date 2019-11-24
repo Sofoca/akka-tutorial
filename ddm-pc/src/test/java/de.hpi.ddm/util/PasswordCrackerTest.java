@@ -1,5 +1,6 @@
 package de.hpi.ddm.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -74,7 +75,7 @@ public class PasswordCrackerTest {
         assertEquals("ABABABABAB", passwordCracker.crack());
     }
 
-    @Test
+    @Test @Ignore
     public void testCustomPassword2() {
         PasswordCracker passwordCracker = new PasswordCracker(
                 "ABCDEFGHIJK".toCharArray(),

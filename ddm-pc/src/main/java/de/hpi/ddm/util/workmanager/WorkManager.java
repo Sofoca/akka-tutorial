@@ -10,6 +10,10 @@ public class WorkManager {
 
     private final LinkedList<Task> waitingTasks = new LinkedList<>();
     private final List<WorkItem> workingTasks = new ArrayList<>();
+    private final LinkedList<Task> waitingPasswordTasks = new LinkedList<>();
+    private final List<WorkItem> workingPasswordTasks = new ArrayList<>();
+    private final LinkedList<Task> waitingHintTasks = new LinkedList<>();
+    private final List<WorkItem> workingHintTasks = new ArrayList<>();
     private final Map<Integer, List<String>> hints = new HashMap<>();
     private final Map<Integer, String> passwords = new HashMap<>();
 
@@ -28,31 +32,31 @@ public class WorkManager {
 
     public Task getWork() {
         Task task;
-        do {
-            task = waitingTasks.pop();
-        } while (passwords.containsKey(task.getPasswordId()));
-
-        if (task instanceof PasswordTask) {
+        if (!waitingHintTasks.isEmpty()) {
+            do {
+                task = waitingHintTasks.pop();
+            } while (passwords.containsKey(task.getPasswordId()));
+            workingHintTasks.add(new WorkItem(task));
+        } else {
+            task = waitingPasswordTasks.pop();
             ((PasswordTask) task).getHints().addAll(hints.get(task.getPasswordId()));
+            workingPasswordTasks.add(new WorkItem(task));
         }
-
-        workingTasks.add(new WorkItem(task));
-
         return task;
     }
 
     public boolean hasTasks() {
-        return !waitingTasks.isEmpty();
+        return !(waitingHintTasks.isEmpty() && waitingPasswordTasks.isEmpty());
     }
 
     public boolean isFinished() {
         //return waitingTasks.isEmpty() && workingTasks.isEmpty() && passwords.size() == passwordCount;
-        return waitingTasks.isEmpty() && passwords.size() == passwordCount;
+        return waitingPasswordTasks.isEmpty() && passwords.size() == passwordCount;
     }
 
     public void addWork(Reader.PasswordLine passwordLine) {
         for (int i = 0; i < passwordLine.getHintHashes().size(); i++) {
-            waitingTasks.add(
+            waitingHintTasks.add(
                     new HintTask(
                             passwordLine.getHintHashes().get(i),
                             i,
@@ -61,7 +65,7 @@ public class WorkManager {
             );
         }
         passwordCount++;
-        waitingTasks.add(
+        waitingPasswordTasks.add(
                 new PasswordTask(
                         passwordLine.getPasswordChars(),
                         passwordLine.getPasswordLength(),
